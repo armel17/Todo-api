@@ -37,19 +37,19 @@ app.get('/todos/:id', function (req, res) {
     //res.send('Asking for todo with id of ' + req.params.id);
     
     if(!matchedTodo) {
-        res.status(404).send();
+        res.status(404).send(); // 404 -> Not found
     } else {
         res.json(matchedTodo);
     }
 });
 
 
-// POST
+// POST /todos
 app.post('/todos', function(req, res){
     var body = _.pick(req.body, 'description', 'completed');
     
     if(!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
-        return res.status(400).send();
+        return res.status(400).send();  // 400 -> Bad request
     }
     
     body.description = body.description.trim();
@@ -64,6 +64,21 @@ app.post('/todos', function(req, res){
     // Send response
     res.json(body);
     
+});
+
+// DELETE /todos/:id
+app.delete('/todos/:id', function (req, res) {
+    var todoId = parseInt(req.params.id, 10);
+    var matchedTodo = _.findWhere(todos, {id: todoId});
+
+    if(!matchedTodo) {
+        res.status(404).json("error":"no todo found with that id.");
+    } else {
+        // Delete the item
+        todos = _.without(todos, matchedTodo);
+        // Return the deleted item (+ a 200 Status)
+        res.json(matchedTodo);
+    }
 });
 
 app.listen(PORT, function() {
