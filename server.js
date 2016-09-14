@@ -72,11 +72,47 @@ app.delete('/todos/:id', function (req, res) {
     var matchedTodo = _.findWhere(todos, {id: todoId});
 
     if(!matchedTodo) {
-        res.status(404).json("error":"no todo found with that id.");
+        res.status(404).json({"error":"no todo found with that id."});
     } else {
         // Delete the item
         todos = _.without(todos, matchedTodo);
         // Return the deleted item (+ a 200 Status)
+        res.json(matchedTodo);
+    }
+});
+
+// PUT /todos/:id
+app.put('/todos/:id', function (req, res) {
+    var todoId = parseInt(req.params.id, 10);
+    var matchedTodo = _.findWhere(todos, {id: todoId});
+
+    if(!matchedTodo) {
+        return res.status(404).json({"error":"no todo found with that id."});
+    } else {
+        var body = _.pick(req.body, 'description', 'completed');
+        var validAttributes = {};
+
+        // 1 - Validate 'completed'
+        if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
+            // Attribute present and valid format
+            validAttributes.completed = body.completed;
+        } else if (body.hasOwnProperty('completed')) {
+            // Bad request
+            return res.status(400).send();
+        }
+
+        // 2 - Validate 'description'
+        if (body.hasOwnProperty('description') && _.isString(body.description) & body.description.trim().length > 0) {
+            // Attribute present and valid format
+            validAttributes.completed = body.completed;
+        } else if (body.hasOwnProperty('description')) {
+            // Bad request
+            return res.status(400).send();
+        }
+
+        // 3 - Update todo
+        // OBJECTS are passed by REFERENCE in js (so the matchedTodo is actually refering the one in 'todos')
+        _.extend(matchedTodo, validAttributes);
         res.json(matchedTodo);
     }
 });
