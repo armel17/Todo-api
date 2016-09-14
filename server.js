@@ -16,7 +16,16 @@ app.get('/', function (req, res) {
 
 // GET /todos
 app.get('/todos', function (req, res) {
-    res.json(todos);
+    var queryParams = req.query;    // Same type as req.body
+    var filteredTodos = todos;
+    
+    if(queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
+        filteredTodos = _.where(todos, {completed: true});
+    } else if (queryParams.chasOwnProperty('completed') && queryParams.completed === 'false') {
+        filteredTodos = _.where(todos, {completed: false});
+    }
+    
+    res.json(filteredTodos);
 });
 
 
@@ -25,17 +34,6 @@ app.get('/todos/:id', function (req, res) {
     var todoId = parseInt(req.params.id, 10);
     var matchedTodo = _.findWhere(todos, {id: todoId});
 
-// OLD    
-//    var matchedTodo;
-//    
-//    todos.forEach(function(item) {
-//        if (item.id == todoId) {
-//                matchedTodo = item;
-//            }
-//    });
-    
-    //res.send('Asking for todo with id of ' + req.params.id);
-    
     if(!matchedTodo) {
         res.status(404).send(); // 404 -> Not found
     } else {
