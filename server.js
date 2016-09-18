@@ -43,15 +43,30 @@ app.get('/todos', function (req, res) {
 // GET /todos/:id
 app.get('/todos/:id', function (req, res) {
     var todoId = parseInt(req.params.id, 10);
-    var matchedTodo = _.findWhere(todos, {
-        id: todoId
-    });
 
-    if (!matchedTodo) {
-        res.status(404).send(); // 404 -> Not found
-    } else {
-        res.json(matchedTodo);
-    }
+    // NEW - with persistent database
+    db.todo.findById(todoId)
+        .then(function (matchedTodo) {
+            if (matchedTodo) {
+                res.json(matchedTodo.toJSON());
+            } else {
+                res.status(404).send();
+            }
+        })
+        .catch(function (e) {
+            res.status(400).send(e);
+        });
+
+    // OLD - with static array    
+    //    var matchedTodo = _.findWhere(todos, {
+    //        id: todoId
+    //    });
+    //
+    //    if (!matchedTodo) {
+    //        res.status(404).send(); // 404 -> Not found
+    //    } else {
+    //        res.json(matchedTodo);
+    //    }
 });
 
 
@@ -67,7 +82,7 @@ app.post('/todos', function (req, res) {
     });
 
 
-    //  OLD
+    //  OLD - with static array
     //    if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
     //        return res.status(400).send(); // 400 -> Bad request
     //    }
