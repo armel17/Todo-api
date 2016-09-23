@@ -42,29 +42,6 @@ app.get('/todos', function (req, res) {
         }, function (e) {
             res.status(500).send(e);
         });
-
-
-    // OLD - with static array
-    //    var queryParams = req.query; // Same type as req.body
-    //    var filteredTodos = todos;
-    //
-    //    if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
-    //        filteredTodos = _.where(todos, {
-    //            completed: true
-    //        });
-    //    } else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
-    //        filteredTodos = _.where(todos, {
-    //            completed: false
-    //        });
-    //    }
-    //
-    //    if (queryParams.hasOwnProperty('q') && queryParams.q.trim().length > 0) {
-    //        filteredTodos = _.filter(filteredTodos, function (num) {
-    //            return (num.description.toLowerCase().indexOf(queryParams.q.trim().toLocaleLowerCase()) > -1);
-    //        });
-    //    }
-    //
-    //    res.json(filteredTodos);
 });
 
 
@@ -84,17 +61,6 @@ app.get('/todos/:id', function (req, res) {
         .catch(function (e) {
             res.status(400).send(e);
         });
-
-    // OLD - with static array    
-    //    var matchedTodo = _.findWhere(todos, {
-    //        id: todoId
-    //    });
-    //
-    //    if (!matchedTodo) {
-    //        res.status(404).send(); // 404 -> Not found
-    //    } else {
-    //        res.json(matchedTodo);
-    //    }
 });
 
 
@@ -108,25 +74,6 @@ app.post('/todos', function (req, res) {
     }).catch(function (e) {
         res.status(400).json(e);
     });
-
-
-    //  OLD - with static array
-    //    if (!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0) {
-    //        return res.status(400).send(); // 400 -> Bad request
-    //    }
-    //
-    //    body.description = body.description.trim();
-    //
-    //    // Add id number to the todo
-    //    body.id = todoNextId;
-    //    todoNextId++;
-    //
-    //    // Add the new todo to the todo-list
-    //    todos.push(body);
-    //
-    //    // Send response
-    //    res.json(body);
-
 });
 
 // DELETE /todos/:id
@@ -149,78 +96,43 @@ app.delete('/todos/:id', function (req, res) {
     }, function () {
         res.status(500).send();
     });
-
-    // OTHER METHOD:
-    //    db.todo.findById(todoId)
-    //        .then(function (matchedTodo) {
-    //            if (matchedTodo) {
-    //                res.json(matchedTodo);
-    //                return matchedTodo.destroy({
-    //                    force: true
-    //                });
-    //            } else {
-    //                res.status(404).send();
-    //            }
-    //        })
-    //        .catch(function (e) {
-    //            res.status(400).send(e);
-    //        });
-
-    // OLD - static array
-    //    var matchedTodo = _.findWhere(todos, {
-    //        id: todoId
-    //    });
-    //
-    //    if (!matchedTodo) {
-    //        res.status(404).json({
-    //            "error": "no todo found with that id."
-    //        });
-    //    } else {
-    //        // Delete the item
-    //        todos = _.without(todos, matchedTodo);
-    //        // Return the deleted item (+ a 200 Status)
-    //        res.json(matchedTodo);
-    //    }
 });
 
 // PUT /todos/:id
 app.put('/todos/:id', function (req, res) {
     var todoId = parseInt(req.params.id, 10);
-    var matchedTodo = _.findWhere(todos, {
-        id: todoId
-    });
+    var body = _.pick(req.body, 'description', 'completed');
+    var attributes = {};
 
-    if (!matchedTodo) {
-        return res.status(404).json({
-            "error": "no todo found with that id."
-        });
-    } else {
-        var body = _.pick(req.body, 'description', 'completed');
-        var validAttributes = {};
-
-        // 1 - Validate 'completed'
-        if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-            // Attribute present and valid format
-            validAttributes.completed = body.completed;
-        } else if (body.hasOwnProperty('completed')) {
-            // Bad request
-            return res.status(400).send();
-        }
-
-        // 2 - Validate 'description'
-        if (body.hasOwnProperty('description') && _.isString(body.description) & body.description.trim().length > 0) {
-            // Attribute present and valid format
-            validAttributes.completed = body.completed;
-        } else if (body.hasOwnProperty('description')) {
-            // Bad request
-            return res.status(400).send();
-        }
-
-        // 3 - Update todo
-        // OBJECTS are passed by REFERENCE in js (so the matchedTodo is actually refering the one in 'todos')
-        _.extend(matchedTodo, validAttributes);
-        res.json(matchedTodo);
+    //  1 - Validate 'completed'
+    if (body.hasOwnProperty('completed')) {
+        // Attribute present and valid format
+        attributes.completed = body.completed;
     }
+
+    // 2 - Validate 'description'
+    if (body.hasOwnProperty('description')) {
+        // Attribute present and valid format
+        attributes.description = body.description;
+    }
+
+    // 3 - Update todo
+    //  /!\ Here, an INSTANCE method is used, and not a MODEL method as before
+    db.todo.findById(todoId)
+        .then(function (todo) {
+            if (todo) {
+                todo.update(attributes)
+                    .then(function (todo) { // Same todo as before but updated
+                        res.json(todo.toJSON());
+                    }, function (e) {
+                        res.status(400).json(e); // If an error occur with the 'update' method
+                    });
+            } else {
+                res.status(404).send();
+            }
+        }, function () { // If an error occur with the 'findById' method
+            res.status(500).send();
+        });
 });
 
 // Attach the database here
