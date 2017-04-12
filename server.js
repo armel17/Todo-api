@@ -20,7 +20,9 @@ app.get('/', function (req, res) {
 // GET /todos
 app.get('/todos', middleware.requireAuthentication, function (req, res) {
     var query = req.query;
-    var where = {};
+    var where = {
+        userId: req.user.get('id')
+    };
 
     // NEW - With real database
 
@@ -52,8 +54,12 @@ app.get('/todos/:id', middleware.requireAuthentication, function (req, res) {
     var todoId = parseInt(req.params.id, 10);
 
     // NEW - with persistent database
-    db.todo.findById(todoId)
-        .then(function (matchedTodo) {
+    db.todo.findOne({
+        where: {
+            id: todoId,
+            userId: req.user.get('id')
+        }
+    }).then(function (matchedTodo) {
             if (matchedTodo) {
                 res.json(matchedTodo);
             } else {
@@ -90,7 +96,8 @@ app.delete('/todos/:id', middleware.requireAuthentication, function (req, res) {
     // NEW - Real database
     db.todo.destroy({
         where: {
-            id: todoId
+            id: todoId,
+            userId: req.user.get('id')
         }
     }).then(function (rowsDeleted) {
         if (rowsDeleted === 0) {
@@ -125,8 +132,12 @@ app.put('/todos/:id', middleware.requireAuthentication, function (req, res) {
 
     // 3 - Update todo
     //  /!\ Here, an INSTANCE method is used, and not a MODEL method as before
-    db.todo.findById(todoId)
-        .then(function (todo) {
+    db.todo.findOne({
+        where: {
+            id: todoId,
+            userId: req.user.get('id')
+        }
+    }).then(function (todo) {
             if (todo) {
                 todo.update(attributes)
                     .then(function (todo) { // Same todo as before but updated
@@ -142,6 +153,7 @@ app.put('/todos/:id', middleware.requireAuthentication, function (req, res) {
         });
 });
 
+// POST /users -- Sign up
 app.post('/users', function (req, res) {
     var body = _.pick(req.body, 'email', 'password');
     
@@ -152,7 +164,7 @@ app.post('/users', function (req, res) {
     });
 });
 
-// POST /users/login
+// POST /users/login -- Sign in
 app.post('/users/login', function (req, res) {
     var body = _.pick(req.body, 'email', 'password');
     
