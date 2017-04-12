@@ -72,8 +72,13 @@ app.post('/todos', middleware.requireAuthentication, function (req, res) {
 
     // NEW - with persistent database
     db.todo.create(body).then(function (todo) {
-        res.json(todo.toJSON());
-    }).catch(function (e) {
+        req.user.addTodo(todo).then(function () {
+            // Return the updated todo item since we set the user it belongs to
+            return todo.reload();
+        }).then(function (todo) {
+            res.json(todo.toJSON());
+        });
+    }, function (e) {
         res.status(400).json(e);
     });
 });

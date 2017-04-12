@@ -20,13 +20,51 @@ var Todo = sequelize.define('todo', {
     }
 });
 
+var User = sequelize.define('user', {
+    email: Sequelize.STRING
+});
+
+Todo.belongsTo(User);
+User.hasMany(Todo);
+
 // sync() returns a PROMISE, so we can have a callback function using what comes back
 sequelize.sync({
-    //force: true
+//    force: true
 }).then(function () {
     console.log('Everything is synced.');
     
-    return Todo.findById(1);
+    User.findById(1).then(function (user) {
+        // Done by Sequelize: "get" + Model_name + "s"  (for associations)
+        user.getTodos({
+            where: {
+                completed: false
+            }
+        }).then(function (todos) {
+            todos.forEach(function (todo) {
+                console.log(todo.toJSON());
+            });
+        });
+    });
+    
+//    User.create({
+//        email: 'arnaud@example.com'
+//    }).then(function () {
+//        return Todo.create({
+//            description: 'Clean yard',
+//        });
+//    }).then(function (todo) {
+//        User.findById(1).then(function (user) {
+//            // Done by Sequelize: "add" + Model_name  (for associations)        
+//            user.addTodo(todo);
+//        });
+//    });
+});
+
+
+
+// OLD CODE
+
+/*    return Todo.findById(1);
     
 //    Todo.create({
 //        description: 'Walking the dog'
@@ -56,5 +94,4 @@ sequelize.sync({
 //        console.log(e);
 //    });
 }).then(function(todo) {
-    console.log(todo.toJSON());
-});
+    console.log(todo.toJSON());*/
